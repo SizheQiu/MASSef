@@ -11,7 +11,7 @@
 Begin["`Private`"];
 
 
-(* ::Subsection::Closed:: *)
+(* ::Subsection:: *)
 (*Separate catalytic and non-catalytic reactions*)
 
 
@@ -95,6 +95,41 @@ getUnifiedRateConstList[allCatalyticReactions_, nonCatalyticReactions_]:=Block[{
 
 
 (* ::Subsection:: *)
+(*Get equivalent rate constants list*)
+
+
+getEquivalentRateConsts[enzymeModel_] := Block[{metList, rateConstSub},
+
+	metList = Cases[enzymeModel["Species"], _metabolite];
+
+	rateConstSub = Table[
+					Table[
+
+						Which[Length[Cases[getSubstrates[rxn],_metabolite]] > 0 &&SameQ[Cases[getSubstrates[rxn],_metabolite][[1]], met],
+							{rateconst[getID[rxn], True], rateconst[getID[rxn], False]},
+		
+							Length[Cases[getProducts[rxn],_metabolite]] > 0 &&SameQ[Cases[getProducts[rxn],_metabolite][[1]], met],
+							{rateconst[getID[rxn], True], rateconst[getID[rxn], False]}
+						],
+
+						{rxn, enzymeModel["Reactions"]}],
+					{met, metList}];
+
+	rateConstSub = Map[Flatten@DeleteCases[#, Null]&, rateConstSub];
+
+	rateConstSub = Table[
+
+					{Map[#-> ratesGroup[[1]]&, ratesGroup[[1;; Length@ratesGroup;; 2]]],
+						Map[#-> ratesGroup[[2]]&, ratesGroup[[2;; Length@ratesGroup;; 2]]]},
+
+					{ratesGroup, rateConstSub}] // Flatten;
+					
+
+	Return[rateConstSub];
+];
+
+
+(* ::Subsection:: *)
 (*Get half haldane substitution*)
 
 
@@ -135,7 +170,7 @@ getFluxEquation[inputDir_, rxnName_, enzymeModel_, rateConstSubstitutionList_, t
 				nActiveSites_:1, outFileLabel_:""]:=
 	Block[{enSolFilePath, absFluxFilePath, enzSol, absoluteFlux, fluxEq, enzForms, enzConservationEq, enzPos, ssEq,
 			posConcentractionAssumption, s, e},
-			
+
 	enSolFilePath = FileNameJoin[{inputDir, "enzSol_" <> rxnName<> "_" <> outFileLabel<> ".m"}, OperatingSystem->$OperatingSystem];
 	absFluxFilePath = FileNameJoin[{inputDir, "absoluteFlux_" <> rxnName<> "_" <> outFileLabel<> ".m"}, OperatingSystem->$OperatingSystem];
 
@@ -610,7 +645,7 @@ getHaldane[allCatalyticReactions_, unifiedRateConstList_, KeqName_] := Block[{ha
 setUpFluxEquations[enzymeModel_, rxn_, rxnName_, inputPath_, inhibitionListFull_, inhibitionListSubset_, 
 					catalyticReactionsSetsList_, otherMetsReverseZeroSub_,  
 					otherMetsForwardZeroSub_,  MWCFlag_: False, simplifyFlag_:True, simplifyMaxTime_:300, 
-					nActiveSites_:1, equivalentReactionsSetsList_:{}] :=
+					nActiveSites_:1,  equivRatesFlag_:False, equivalentReactionsSetsList_:{}] :=
 	Block[{enzymeModelLocal=enzymeModel, rxnMets, inhibitors,prodInhibBool,reverseZeroSub, forwardZeroSub, 
 		metSatForSub, metSatRevSub, rates, KeqName, KeqVal, volumeSub,
 		allCatalyticReactions, nonCatalyticReactions, transitionID, transitionRateEqs, rateConstSubstitutionList, 
@@ -641,12 +676,21 @@ setUpFluxEquations[enzymeModel_, rxn_, rxnName_, inputPath_, inhibitionListFull_
 			getUnifiedRateConstList[allCatalyticReactions, nonCatalyticReactions],
 			{}
 		];
+		
+	If[TrueQ[equivRatesFlag],
+		AppendTo[rateConstSubstitutionList, getEquivalentRateConsts[enzymeModel]];
+		rateConstSubstitutionList = Flatten@rateConstSubstitutionList;
+	];
+		
+	Print[rateConstSubstitutionList];
 	
 	If[ !SameQ[equivalentReactionsSetsList, {}] && !SameQ[equivalentReactionsSetsList, Null],
 			AppendTo[rateConstSubstitutionList, getHalfHaldaneSub[equivalentReactionsSetsList]];
 			rateConstSubstitutionList = Flatten @ rateConstSubstitutionList;
 	];
-
+	
+	Print[rateConstSubstitutionList];
+	
 	(*Identify Transition Rate Equations*)
 	transitionID = getTransitionIDs[allCatalyticReactions];
 
@@ -667,7 +711,7 @@ setUpFluxEquations[enzymeModel_, rxn_, rxnName_, inputPath_, inhibitionListFull_
 	];
 	(*Print[enzymeModelLocal["Reactions"]];*)
 	(* get flux equation including inhibitions*)
-	Print[rateConstSubstitutionList];
+	
 	Print[transitionRateEqs];
 	absoluteFlux = getFluxEquation[inputPath, rxnName, enzymeModelLocal, rateConstSubstitutionList, transitionRateEqs, simplifyFlag, simplifyMaxTime, nActiveSites, ""];
 

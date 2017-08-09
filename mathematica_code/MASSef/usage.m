@@ -43,6 +43,9 @@ getTransitionRateEqs::usage="getTransitionRateEqs[transitionID, rates]";
 getUnifiedRateConstList::usage="getUnifiedRateConstList[allCatalyticReactions, nonCatalyticReactions]";
 
 
+getEquivalentRateConsts::usage="getEquivalentRateConsts[enzymeModel]";
+
+
 getFluxEquation::usage="getFluxEquation[workingDir, rxnName, enzymeModel, unifiedRateConstList, transitionRateEqs]";
 
 
@@ -64,8 +67,10 @@ getMetRatesSubs::usage="getMetRatesSubs[enzymeModel, absoluteRateForward, absolu
 exportRateEqs::usage="exportRateEqs[outputPath, absoluteRateForward, absoluteRateReverse, relativeRateForward, relativeRateReverse, metsSub, metSatForSub, metSatRevSub, rateConstsSub]";
 
 
-setUpFluxEquations::usage="setUpFluxEquations[enzymeModel, rxn, rxnName, inputPath,inhibitionList, catalyticReactionsSetsList, otherMetsReverseZeroSub, 
-					otherMetsForwardZeroSub, simplifyMaxTime, nActiveSites]";
+setUpFluxEquations::usage="setUpFluxEquations[enzymeModel, rxn, rxnName, inputPath, inhibitionListFull, inhibitionListSubset, 
+					catalyticReactionsSetsList, otherMetsReverseZeroSub,  
+					otherMetsForwardZeroSub,  MWCFlag, simplifyFlag, simplifyMaxTime, 
+					nActiveSites,  equivRatesFlag, equivalentReactionsSetsList]";
 
 
 (* ::Subsection:: *)
